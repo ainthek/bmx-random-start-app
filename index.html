@@ -1,0 +1,121 @@
+<html>
+
+<head>
+
+    <style>
+        .lights {
+            background-color: black;
+            display: inline-block;
+        }
+
+        .circle {
+            height: 100px;
+            width: 100px;
+            background-color: gray;
+            border-radius: 50%;
+            display: block;
+        }
+
+        #start {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="lights">
+        <div class='circle' id="r"></div>
+        <div class='circle' id="o1"></div>
+        <div class='circle' id="o2"></div>
+        <div class='circle' id="g"></div>
+    </div>
+    <div id="results">
+
+    </div>
+
+    <script>
+
+
+        const a1 = new Audio("./ok-riders-random-start.wav");
+        const d1 = 1800;
+        const a2 = new Audio("./riders-ready-watch-the-gate.wav");
+        const d2 = () => getRandomInt(100, 2701)
+        const a3 = new Audio("./beeps.wav");
+        let playing = false;
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === " ") {
+                if (playing) {
+                    if (!("time" in result)) {
+                        result.time = Date.now() - result.start;
+                        results.push(result);
+                        drawResults(results);
+                    }
+                }
+                else {
+                    a1.play();
+                }
+            }
+        });
+        let result;
+        const results = [];
+
+        a1.addEventListener("play", () => {
+            result = {};
+            playing = 1;
+        });
+        a1.addEventListener("ended", function () {
+            setTimeout(() => a2.play(), d1);
+        });
+        a2.addEventListener("play", () => { });
+        a2.addEventListener("ended", function () {
+            const random = d2();
+            result.random = random;
+            setTimeout(() => {
+                a3.play()
+            }, random);
+        });
+        a3.addEventListener("play", () => {
+            result.start = Date.now()
+            on();
+        });
+        a3.addEventListener("ended", () => {
+            playing = 0;
+            off();
+        });
+        const r = document.getElementById("r");
+        const o1 = document.getElementById("o1");
+        const o2 = document.getElementById("o2");
+        const g = document.getElementById("g");
+
+
+        function on() {
+            setTimeout(() => r.style.backgroundColor = "red", 0);
+            setTimeout(() => o1.style.backgroundColor = "orange", 120);
+            setTimeout(() => o2.style.backgroundColor = "orange", 240);
+            setTimeout(() => g.style.backgroundColor = "green", 360);
+        }
+        function off() {
+            r.style.backgroundColor =
+                o1.style.backgroundColor =
+                o2.style.backgroundColor =
+                g.style.backgroundColor = "gray"
+        }
+        function getRandomInt(min, max) {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
+        }
+        function drawResults(resuls) {
+            const lines = (results) => results
+                .map((r, i) => `<tr><td>${i + 1}.<td>${r.time || "X"}<td>${r.random || ""}</tr>`)
+                .join("");
+            
+            document.getElementById("results").innerHTML = `
+                <table><thead><tr><th>#<th>time<th>delay<tbody>${lines(results)}</table>
+            `;
+        }
+    </script>
+</body>
+
+</html>
