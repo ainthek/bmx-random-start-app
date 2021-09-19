@@ -36,9 +36,14 @@
 </head>
 
 <body>
-    <h1>UCI Gate Starts v.210919.02</h1>
-    <p>Use SPACEBAR to start sequence and to react to firts light.</p>
-
+    <h1>UCI Gate Starts v.210919.03</h1>
+    <p>
+        Use SPACEBAR to start sequence and to react to firts light.
+        see also <a href=https://youtu.be/P2KgJ9GjiGA>Youtube version</a>
+        or downloadable <a href=https://www.dropbox.com/s/k5msc364c1l62sg/10-starts.v201129.50.fps.export.mov?dl=0>50fps video</a>
+        got "more exact" measuring.
+    </p>
+    
     <span class="lights">
         <div class='circle' id="r"></div>
         <div class='circle' id="o1"></div>
@@ -51,7 +56,7 @@
     <script>
         // Super naive version, just quick proto
         // need much better timing and precision
-        
+
         // safari hack for delayed audio ?
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
@@ -116,7 +121,7 @@
 
 
         function on() {
-            setTimeout(() => r.style.backgroundColor = "red", 0);
+            r.style.backgroundColor = "red";
             setTimeout(() => o1.style.backgroundColor = "orange", 120);
             setTimeout(() => o2.style.backgroundColor = "orange", 240);
             setTimeout(() => g.style.backgroundColor = "green", 360);
