@@ -1,9 +1,9 @@
 <html>
 
 <head>
-
     <style>
         .lights {
+            height:400px;
             background-color: black;
             display: inline-block;
         }
@@ -19,28 +19,43 @@
         #start {
             display: block;
         }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        td,
+        th {
+            border: 1px solid black;
+            text-align: right;
+        }
+        #results {
+            height:400px;
+        }
     </style>
 </head>
 
 <body>
-    <div class="lights">
+    <h1>UCI Gate Starts v210919</h1>
+    <p>Use SPACEBAR to start sequence and to react to firts light.</p>
+
+    <span class="lights">
         <div class='circle' id="r"></div>
         <div class='circle' id="o1"></div>
         <div class='circle' id="o2"></div>
         <div class='circle' id="g"></div>
-    </div>
-    <div id="results">
-
-    </div>
-
+    </span>
+    <span id="results" style="display:inline-block">
+        <table><thead><tr><th>#<th>time<th>delay<tbody></tbody></table>
+    </span>
     <script>
 
 
-        const a1 = new Audio("./ok-riders-random-start.wav");
+        const a1 = new Audio("./ok-riders-random-start.mp3");
         const d1 = 1800;
-        const a2 = new Audio("./riders-ready-watch-the-gate.wav");
+        const a2 = new Audio("./riders-ready-watch-the-gate.mp3");
         const d2 = () => getRandomInt(100, 2701)
-        const a3 = new Audio("./beeps.wav");
+        const a3 = new Audio("./beeps.mp3");
         let playing = false;
 
         document.addEventListener('keydown', (e) => {
@@ -110,10 +125,8 @@
             const lines = (results) => results
                 .map((r, i) => `<tr><td>${i + 1}.<td>${r.time || "X"}<td>${r.random || ""}</tr>`)
                 .join("");
-            
-            document.getElementById("results").innerHTML = `
-                <table><thead><tr><th>#<th>time<th>delay<tbody>${lines(results)}</table>
-            `;
+
+            document.getElementById("results").getElementsByTagName("tbody")[0].innerHTML = `${lines(results)}`;
         }
     </script>
 </body>
