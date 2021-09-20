@@ -2,17 +2,19 @@
 
 <head>
     <style>
-        html{
+        html {
             font-family: 'Courier New', Courier, monospace;
             background-color: gray;
-            color:gray
+            color: gray
         }
-        body{
-            width:800px;
-            margin:auto;
+
+        body {
+            width: 800px;
+            margin: auto;
             background-color: black;
-            text-align:center;
+            text-align: center;
         }
+
         .lights {
             height: 450px;
             width: 200px;
@@ -20,8 +22,9 @@
             display: inline-block;
             vertical-align: top;
             text-align: center;
-            border:1px solid white
+            border: 1px solid white
         }
+
         .circle {
             height: 100px;
             width: 100px;
@@ -48,10 +51,11 @@
         th {
             border: 1px solid white;
             text-align: right;
-            color:white;
+            color: white;
         }
+
         th {
-            text-align: center; 
+            text-align: center;
         }
 
         #results {
@@ -67,7 +71,7 @@
 </head>
 
 <body>
-    <h1>UCI Gate Starts (version 0.0.3)</h1>
+    <h1>UCI Gate Starts (version 0.0.4)</h1>
     <p>
         Use SPACEBAR to start sequence and to react to firts light.
         see also <a href=https://youtu.be/P2KgJ9GjiGA>Youtube version</a>
@@ -89,7 +93,9 @@
     <span id="results" style="display:inline-block">
         <table>
             <thead>
-                <tr><th colspan=3>Results</th></tr>
+                <tr>
+                    <th colspan=3>Results</th>
+                </tr>
                 <tr>
                     <th>#
                     <th>time
@@ -100,8 +106,13 @@
     <script>
         const cadence = Cadence();
         const results = [];
+
+
         document.addEventListener('keydown', async (e) => {
+
             if (e.key === " ") {
+
+
                 //console.log(cadence.status);
                 if (cadence.status === "00_UNKNOWN"
                     || cadence.status === "03_FINISHED"
@@ -139,7 +150,8 @@
             let beeps;
             let status = "00_UNKNOWN";
             let times = {};
-
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            let audioCtx;
             const onBeepsStart = () => {
                 status = "02_BEEPS";
                 lights.start();
@@ -151,6 +163,7 @@
                 times.beepsStop = Date.now();
             };
             async function start(dFrom = 100, dTo = 2700) {
+                audioCtx || new AudioContext(); //init only once
                 stop();
                 status = "01_RIDERS_READY";
                 const delay = getRandomInt(dFrom, dTo + 1);
