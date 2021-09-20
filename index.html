@@ -2,18 +2,37 @@
 
 <head>
     <style>
+        html{
+            font-family: 'Courier New', Courier, monospace;
+            background-color: gray;
+            color:gray
+        }
+        body{
+            width:800px;
+            margin:auto;
+            background-color: black;
+            text-align:center;
+        }
         .lights {
-            height:400px;
+            height: 450px;
+            width: 200px;
             background-color: black;
             display: inline-block;
+            vertical-align: top;
+            text-align: center;
+            border:1px solid white
         }
-
         .circle {
             height: 100px;
             width: 100px;
             background-color: gray;
             border-radius: 50%;
             display: block;
+            line-height: 100px;
+            color: white;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 10px;
         }
 
         #start {
@@ -22,115 +41,209 @@
 
         table {
             border-collapse: collapse;
+            width: 100%;
         }
 
         td,
         th {
-            border: 1px solid black;
+            border: 1px solid white;
             text-align: right;
+            color:white;
         }
+        th {
+            text-align: center; 
+        }
+
         #results {
-            height:400px;
+            height: 400px;
+            width: 200px;
+            background-color: black;
+        }
+
+        input {
+            width: 5em
         }
     </style>
 </head>
 
 <body>
-    <h1>UCI Gate Starts v.210919.03</h1>
+    <h1>UCI Gate Starts (version 0.0.3)</h1>
     <p>
         Use SPACEBAR to start sequence and to react to firts light.
         see also <a href=https://youtu.be/P2KgJ9GjiGA>Youtube version</a>
-        or downloadable <a href=https://www.dropbox.com/s/k5msc364c1l62sg/10-starts.v201129.50.fps.export.mov?dl=0>50fps video</a>
-        got "more exact" measuring.
+        without random delay.
     </p>
-    
+    <p>
+        Random delay
+        from: <input type="number" id="dFrom" value="0.1"> (s)
+        to: <input type="number" id="dTo" value="2.7"> (s).
+
+    </p>
     <span class="lights">
-        <div class='circle' id="r"></div>
-        <div class='circle' id="o1"></div>
-        <div class='circle' id="o2"></div>
-        <div class='circle' id="g"></div>
+        <div class='circle' id="r">&lt;120</div>
+        <div class='circle' id="o1">120-240</div>
+        <div class='circle' id="o2">230-360</div>
+        <div class='circle' id="g">360+</div>
     </span>
+
     <span id="results" style="display:inline-block">
-        <table><thead><tr><th>#<th>time<th>delay<tbody></tbody></table>
+        <table>
+            <thead>
+                <tr><th colspan=3>Results</th></tr>
+                <tr>
+                    <th>#
+                    <th>time
+                    <th>delay
+            <tbody></tbody>
+        </table>
     </span>
     <script>
-        // Super naive version, just quick proto
-        // need much better timing and precision
-
-        // safari hack for delayed audio ?
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-
-
-        const a1 = new Audio("./ok-riders-random-start.mp3");
-        const d1 = 1800;
-        const a2 = new Audio("./riders-ready-watch-the-gate.mp3");
-        const d2 = () => getRandomInt(100, 2701)
-        const a3 = new Audio("./beeps.mp3");
-        let playing = false;
-
-        // TODO: should wait for all media to load fully
-        // a3.addEventListener("canplaythrough", function() {
-        //     console.log("a3.ready");
-        // });
-
-        document.addEventListener('keydown', (e) => {
+        const cadence = Cadence();
+        const results = [];
+        document.addEventListener('keydown', async (e) => {
             if (e.key === " ") {
-                if (playing) {
-                    if (!("time" in result)) {
-                        result.time = Date.now() - result.start;
-                        results.push(result);
-                        drawResults(results);
-                    }
+                //console.log(cadence.status);
+                if (cadence.status === "00_UNKNOWN"
+                    || cadence.status === "03_FINISHED"
+                    || cadence.status.endsWith("_STOPPED")
+                    || cadence.status === "02_BEEPS_PAUSED") {
+                    const dFrom = parseFloat(document.getElementById("dFrom").value);
+                    const dTo = parseFloat(document.getElementById("dTo").value);
+                    await cadence.start(dFrom * 1000, dTo * 1000);
                 }
                 else {
-                    a1.play();
+                    if (cadence.status === "01_RIDERS_READY") {
+                        results.push({
+                            time: null,
+                            delay: cadence.times.delay
+                        });
+                        drawResults(results);
+                        cadence.stop();
+                    }
+                    else if (cadence.status === "02_BEEPS") {
+                        results.push({
+                            time: Date.now() - cadence.times.beepsStart,
+                            delay: cadence.times.delay
+                        });
+                        drawResults(results);
+                        cadence.pause();
+                    }
                 }
             }
         });
-        let result;
-        const results = [];
 
-        a1.addEventListener("play", () => {
-            result = {};
-            playing = 1;
-        });
-        a1.addEventListener("ended", function () {
-            setTimeout(() => a2.play(), d1);
-        });
-        a2.addEventListener("play", () => { });
-        a2.addEventListener("ended", function () {
-            const random = d2();
-            result.random = random;
-            setTimeout(() => {
-                a3.play()
-            }, random);
-        });
-        a3.addEventListener("play", () => {
-            result.start = Date.now()
-            on();
-        });
-        a3.addEventListener("ended", () => {
-            playing = 0;
-            off();
-        });
-        const r = document.getElementById("r");
-        const o1 = document.getElementById("o1");
-        const o2 = document.getElementById("o2");
-        const g = document.getElementById("g");
+        function Cadence() {
+            let lights = Lights();
+            let sounds = Sounds();
+            let h1;
+            let beeps;
+            let status = "00_UNKNOWN";
+            let times = {};
 
+            const onBeepsStart = () => {
+                status = "02_BEEPS";
+                lights.start();
+                times.beepsStart = Date.now();
+            };
+            const onBeepsEnd = () => {
+                status = "03_FINISHED";
+                lights.stop();
+                times.beepsStop = Date.now();
+            };
+            async function start(dFrom = 100, dTo = 2700) {
+                stop();
+                status = "01_RIDERS_READY";
+                const delay = getRandomInt(dFrom, dTo + 1);
+                //console.log("delay",delay);
+                beeps = await sounds.start(delay);
+                times = {};
+                times.start = Date.now();
+                times.delay = delay;
+                beeps.addEventListener("play", onBeepsStart, { once: 1 });
+                beeps.addEventListener("ended", onBeepsEnd, { once: 1 });
+            }
+            function pause() {
+                status = status + "_PAUSED";
+                times.pause = Date.now();
+                sounds.stop();
+                lights.pause();
+                beeps && beeps.removeEventListener("play", onBeepsStart);
+                beeps && beeps.removeEventListener("ended", onBeepsEnd);
+            }
+            function stop() {
+                status = status + "_STOPPED";
+                sounds.stop();
+                lights.stop();
+                beeps && beeps.removeEventListener("play", onBeepsStart);
+                beeps && beeps.removeEventListener("ended", onBeepsEnd);
 
-        function on() {
-            r.style.backgroundColor = "red";
-            setTimeout(() => o1.style.backgroundColor = "orange", 120);
-            setTimeout(() => o2.style.backgroundColor = "orange", 240);
-            setTimeout(() => g.style.backgroundColor = "green", 360);
+            }
+            return {
+                start, stop, pause,
+                get status() { return status },
+                get times() { return times }
+            };
         }
-        function off() {
-            r.style.backgroundColor =
-                o1.style.backgroundColor =
-                o2.style.backgroundColor =
-                g.style.backgroundColor = "gray"
+        function Lights() {
+            const r = document.getElementById("r");
+            const o1 = document.getElementById("o1");
+            const o2 = document.getElementById("o2");
+            const g = document.getElementById("g");
+            let t1, t2, t3;
+
+            function start() {
+                r.style.backgroundColor = "red";
+                t1 = setTimeout(() => o1.style.backgroundColor = "orange", 120);
+                t2 = setTimeout(() => o2.style.backgroundColor = "orange", 240);
+                t3 = setTimeout(() => g.style.backgroundColor = "green", 360);
+            }
+            function pause() {
+                clearTimeout(t1);
+                clearTimeout(t2);
+                clearTimeout(t3);
+            }
+            function stop() {
+                clearTimeout(t1);
+                clearTimeout(t2);
+                clearTimeout(t3);
+                r.style.backgroundColor =
+                    o1.style.backgroundColor =
+                    o2.style.backgroundColor =
+                    g.style.backgroundColor = "gray"
+            }
+            return {
+                start, pause, stop
+            }
+        }
+        function Sounds() {
+            const a1 = new Audio("./ok-riders-random-start.mp3");
+            const d1 = 1800;
+            const a2 = new Audio("./riders-ready-watch-the-gate.mp3");
+            const a3 = new Audio("./beeps.mp3");
+            let playing = false;
+            let t1, t2, h1, h2;
+            async function start(delay) {
+                stop();
+                a1.addEventListener("ended", function () {
+                    t1 = setTimeout(() => a2.play(), d1);
+                }, { once: 1 });
+                h2 = a2.addEventListener("ended", function () {
+                    t2 = setTimeout(() => {
+                        a3.play();
+                    }, delay);
+                }, { once: 1 });
+                await a1.play();
+                return a3;
+            }
+
+            async function stop() {
+                a1.currentTime = 0; a2.currentTime = 0; a3.currentTime = 0;
+                clearTimeout(t1); clearTimeout(t2);
+                a1.pause(); a2.pause(); a3.pause();
+                //a1.removeEventListener(h1);
+                //a2.removeEventListener(h2);
+            }
+            return { start, stop, get random() { return random } };
         }
         function getRandomInt(min, max) {
             min = Math.ceil(min);
@@ -139,7 +252,7 @@
         }
         function drawResults(resuls) {
             const lines = (results) => results
-                .map((r, i) => `<tr><td>${i + 1}.<td>${r.time || "X"}<td>${r.random || ""}</tr>`)
+                .map((r, i) => `<tr><td>${i + 1}.<td>${r.time || "X"}<td>${r.delay || ""}</tr>`)
                 .join("");
 
             document.getElementById("results").getElementsByTagName("tbody")[0].innerHTML = `${lines(results)}`;
