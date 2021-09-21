@@ -71,7 +71,7 @@
 </head>
 
 <body>
-    <h1>UCI Gate Starts (version 0.0.5)</h1>
+    <h1>UCI Gate Starts (version 0.0.6)</h1>
     <p>
         Use SPACEBAR to start sequence and to react to firts light.
         see also <a href=https://youtu.be/P2KgJ9GjiGA>Youtube version</a>
@@ -84,7 +84,9 @@
     </p>
     <p>
         Sounds: <input type="checkbox" checked id="soundsOn"> Lights: <input type="checkbox" checked id="lightsOn">
-
+    </p>
+    <p>
+        Disturb: <input type="checkbox" id="disturbOn">
     </p>
     <span class="lights">
         <div class='circle' id="r">&lt;120</div>
@@ -110,7 +112,13 @@
         const cadence = Cadence();
         const results = [];
 
-
+        const noise = new Audio("./noise01.mp3");
+        noise.loop = true;
+        noise.volume=0.1;
+        disturbOn.addEventListener("change", (e) => {
+            e.target.checked && noise.play() || noise.pause();
+        });
+        
         document.addEventListener('keydown', async (e) => {
 
             if (e.key === " ") {
@@ -147,7 +155,7 @@
                 }
             }
         });
-
+        
         function Cadence() {
             let lights = Lights();
             let sounds = Sounds();
@@ -169,7 +177,7 @@
                 times.beepsStop = Date.now();
             };
             async function start(dFrom = 100, dTo = 2700, soundsOn = true, lightsOn = true) {
-                _lightsOn=lightsOn;
+                _lightsOn = lightsOn;
                 audioCtx || new AudioContext(); //init only once
                 stop();
                 status = "01_RIDERS_READY";
