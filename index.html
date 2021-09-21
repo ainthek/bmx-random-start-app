@@ -71,7 +71,7 @@
 </head>
 
 <body>
-    <h1>UCI Gate Starts (version 0.0.4)</h1>
+    <h1>UCI Gate Starts (version 0.0.5)</h1>
     <p>
         Use SPACEBAR to start sequence and to react to firts light.
         see also <a href=https://youtu.be/P2KgJ9GjiGA>Youtube version</a>
@@ -81,6 +81,9 @@
         Random delay
         from: <input type="number" id="dFrom" value="0.1"> (s)
         to: <input type="number" id="dTo" value="2.7"> (s).
+    </p>
+    <p>
+        Sounds: <input type="checkbox" checked id="soundsOn"> Lights: <input type="checkbox" checked id="lightsOn">
 
     </p>
     <span class="lights">
@@ -120,7 +123,9 @@
                     || cadence.status === "02_BEEPS_PAUSED") {
                     const dFrom = parseFloat(document.getElementById("dFrom").value);
                     const dTo = parseFloat(document.getElementById("dTo").value);
-                    await cadence.start(dFrom * 1000, dTo * 1000);
+                    const soundsOn = document.getElementById("soundsOn").checked;
+                    const lightsOn = document.getElementById("lightsOn").checked;
+                    await cadence.start(dFrom * 1000, dTo * 1000, soundsOn, lightsOn);
                 }
                 else {
                     if (cadence.status === "01_RIDERS_READY") {
@@ -152,9 +157,10 @@
             let times = {};
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             let audioCtx;
+            let _lightsOn;
             const onBeepsStart = () => {
                 status = "02_BEEPS";
-                lights.start();
+                lights.start(_lightsOn);
                 times.beepsStart = Date.now();
             };
             const onBeepsEnd = () => {
@@ -162,13 +168,14 @@
                 lights.stop();
                 times.beepsStop = Date.now();
             };
-            async function start(dFrom = 100, dTo = 2700) {
+            async function start(dFrom = 100, dTo = 2700, soundsOn = true, lightsOn = true) {
+                _lightsOn=lightsOn;
                 audioCtx || new AudioContext(); //init only once
                 stop();
                 status = "01_RIDERS_READY";
                 const delay = getRandomInt(dFrom, dTo + 1);
                 //console.log("delay",delay);
-                beeps = await sounds.start(delay);
+                beeps = await sounds.start(delay, soundsOn);
                 times = {};
                 times.start = Date.now();
                 times.delay = delay;
@@ -204,7 +211,8 @@
             const g = document.getElementById("g");
             let t1, t2, t3;
 
-            function start() {
+            function start(lightsOn = true) {
+                if (!lightsOn) return;
                 r.style.backgroundColor = "red";
                 t1 = setTimeout(() => o1.style.backgroundColor = "orange", 120);
                 t2 = setTimeout(() => o2.style.backgroundColor = "orange", 240);
@@ -235,13 +243,14 @@
             const a3 = new Audio("./beeps.mp3");
             let playing = false;
             let t1, t2, h1, h2;
-            async function start(delay) {
+            async function start(delay, soundsOn = true) {
                 stop();
                 a1.addEventListener("ended", function () {
                     t1 = setTimeout(() => a2.play(), d1);
                 }, { once: 1 });
                 h2 = a2.addEventListener("ended", function () {
                     t2 = setTimeout(() => {
+                        a3.muted = !soundsOn;
                         a3.play();
                     }, delay);
                 }, { once: 1 });
